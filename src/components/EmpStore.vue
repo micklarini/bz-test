@@ -15,251 +15,70 @@
 			</v-list>
 		</v-col>
 		<v-col cols="9">
-			<v-form ref="employeeForm" v-model="valid" lazy-validation>
-				<p class="mb-0">Сотрудник</p>
-				<v-text-field
-					v-model="current.fio"
-					:rules="rulesFullName"
-					label="Фамилия Имя Отчество"
-					required
-					ref="employeeName"
-					class="mb-3"
-				></v-text-field>
-				<p class="mb-0">Паспорт</p>
-				<div class="flex-row mb-3">
-					<v-text-field
-						class="d-inline-flex mr-2"
-						type="number"
-						maxlength="4"
-						:counter="4"
-						v-model="current.pass_ser"
-						:rules= "rulesPSeries"
-						label="серия"
-						required
-					></v-text-field>
-					<v-text-field
-						class="d-inline-flex mr-2"
-						type="number"
-						maxlength="6"
-						:counter="6"
-						v-model="current.pass_no"
-						:rules="rulesPNumber"
-						label="номер"
-						required
-					></v-text-field>
-					<v-menu
-						ref="dtMenu"
-						v-model="dtMenu"
-						:close-on-content-click="false"
-						transition="scale-transition"
-						offset-y
-						min-width="290px"
-					>
-						<template v-slot:activator="{ on, attrs }">
-							<v-text-field
-								class="d-inline-flex"
-								v-model="displayDate"
-								:rules="rulesPDate"
-								label="дата выдачи"
-								required
-								readonly
-								v-bind="attrs"
-								v-on="on"
-							></v-text-field>
-						</template>
-						<v-date-picker
-							ref="passportDate"
-							v-model="current.pass_dt"
-							:max="new Date().toISOString().substr(0, 10)"
-							min="1930-01-01"
-							@input="dtMenu = false"
-							locale="ru-ru"
-						></v-date-picker>
-					</v-menu>
-				</div>
-				<v-btn
-					elevation="2"
-					@click="saveEmployee(current)"
-					medium
-					color="primary"
-					class="mr-3"
-				>
-					<v-icon>save</v-icon>Сохранить
-				</v-btn>
-				<v-dialog
-					v-model="dialogDelete"
-					persistent
-					max-width="450"
-				>
-					<template v-slot:activator="{ on, attrs }">
-						<v-btn elevation="2"
-							:disabled="!current.stored"
-							medium
-							color="secondary"
-							v-bind="attrs"
-							v-on="on"
-						>
-							<v-icon>delete</v-icon>Удалить
-						</v-btn>
-					</template>
-					<v-card>
-							<v-card-title class="headline">
-								Удалить {{ current.fioShort }}?
-							</v-card-title>
-							<v-card-actions>
-								<v-spacer></v-spacer>
-								<v-btn
-									color="green"
-									@click="deleteEmployee(current.index)"
-								>
-								Да
-								</v-btn>
-								<v-btn
-									color="secondary"
-									@click="dialogDelete = false"
-								>
-								Нет
-								</v-btn>
-							</v-card-actions>
-					</v-card>
-				</v-dialog>
-			</v-form>
+			<EmpStoreForm ref="editorForm" :entry="current" />
 		</v-col>
 	</v-row>
 </v-container>
 </template>
 
-
 <script>
-import _ from "lodash/core"
-import moment from "moment"
+"use strict"
 
-moment.locale('ru')
+import _ from "lodash/core"
+import EmployeeStorage from "../logic/EmployeeStorage.js"
+
+import EmpStoreForm from "./EmpStoreForm"
 
 export default {
 	name: "EmpStore",
 
+	components: { EmpStoreForm },
+
 	data: () => ({
 		employees: [],
 		current: {},
-
-		valid: true,
-		dtMenu: false,
-		dialogDelete: false,
-
-		rulesFullName: [
-			v => !!v || "Необходимо заполнить Фамилию Имя и Отчество",
-			v => /^[^\s]{2,}\s+[^\s]{2,}\s+[^\s]{2,}\s*$/u.test(v) || "Неверный формат",
-		],
-		rulesPSeries: [
-			v => !!v || "Необходимо заполнить серию",
-			v => (v && v.length == 4) || "Неверная длина",
-		],
-		rulesPNumber: [
-			v => !!v || "Необходимо заполнить номер",
-			v => (v && v.length == 6) || "Неверная длина",
-		],
-		rulesPDate: [
-			v => !!v || "Необходимо заполнить дату выдачи",
-		]
 	}),
 
-	computed: {
-		displayDate() {
-			if (_.isUndefined(this.current.pass_dt))
-				return null
-			return moment(this.current.pass_dt).format("L")
-		},
-	},
-
-	watch: {
-		dtMenu: async function(val) {
-			if (!val) return
-			await this.$nextTick()
-			this.$refs.passportDate.activePicker = "YEAR"
-		},
-	},
-
 	mounted: async function() {
-		let employees = localStorage.getItem("employees")
-		if (!employees)
-			return
-		try {
-			this.employees = JSON.parse(employees).map(
-				(item, index) => this.prepareEmployee(item, index)
-			)
-		}
-		catch(e) {
-			localStorage.removeItem("employees")
-		}
+		this.employees = EmployeeStorage.load()
+		this.$on("entry:save", this.saveEmployee)
+		this.$on("entry:delete", this.deleteEmployee)
 	},
 
 	methods: {
-		storeEmployees() {
-			const storageKeys = [ "fio", "pass_ser", "pass_no", "pass_dt" ]
-			
-			let prepared = this.employees.map(entry =>
-				Object.keys(entry)
-					.filter(key => storageKeys.includes(key))
-					.reduce((obj, key) => {
-						obj[key] = entry[key]
-						return obj
-					}, {})
-			)
-			prepared.forEach(entry => entry.pass_dt = entry.pass_dt + "T00:00:00Z")
-
-			const serialized = JSON.stringify(prepared)
-			localStorage.setItem("employees", serialized)
-		},
-
-		prepareEmployee: (entry, index) => {
-			const fioparts = entry.fio.split(/\s+/)
-			return {
-				...entry,
-				pass_dt: entry.pass_dt.substr(0, 10),
-				fioShort: fioparts.reduce(
-					(acc, curr) => acc + curr.charAt(0) + ".",
-					fioparts.shift() + " "
-				),
-				stored: index !== undefined,
-				index,
-			}
-		},
-
 		saveEmployee(entry) {
-			if (!this.$refs.employeeForm.validate())
-				return
-
 			if (!entry.stored) {
-				this.employees.push(this.prepareEmployee(entry, this.employees.length))
+				this.employees.push(EmployeeStorage.prepareItem(entry, this.employees.length))
 			}
-			else if (entry.index !== undefined) {
-				this.employees[entry.index] = this.prepareEmployee(entry, entry.index)
+			else if (!_.isUndefined(entry.index)) {
+				this.employees[entry.index] = EmployeeStorage.prepareItem(entry, entry.index)
 			}
-			this.storeEmployees()
+			EmployeeStorage.save(this.employees)
 			this.current = {}
-			this.$refs.employeeForm.reset()
 		},
 
-		deleteEmployee(key) {
-			this.dialogDelete = false
-			this.employees.splice(key, 1)
+		deleteEmployee(entry) {
+			if (_.isUndefined(entry.index))
+				return
+			this.employees.splice(entry.index, 1)
+			EmployeeStorage.save(this.employees)
 			this.current = {}
-			this.storeEmployees()
-			this.$refs.employeeForm.reset()
 		},
 
-		formNew() {
+		formNew: async function() {
 			this.current = {}
-			this.$refs.employeeForm.reset()
-			this.$refs.employeeName.focus()
+			await this.$nextTick()
+			this.$refs.editorForm.entryNew()
 		},
 
-		formEdit(key) {
+		formEdit: async function(key) {
 			this.current = {...this.employees[key]}
-			this.$refs.employeeName.focus()
+			await this.$nextTick()
+			this.$refs.editorForm.entryEdit()
 		},
 
 	},
+
 }
+
 </script>

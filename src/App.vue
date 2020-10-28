@@ -11,8 +11,6 @@ import EmpStore from "./components/EmpStore"
 
 export default {
 	name: "App",
-	components: {
-		EmpStore,
-	},
+	components: { EmpStore },
 };
 </script>
