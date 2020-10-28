@@ -7,9 +7,9 @@
 	</v-row>
 	<v-row>
 		<v-col cols="3" class="text-left">
-			<v-btn elevation="2" @click="newForm" medium><v-icon>add</v-icon>Добавить</v-btn>
+			<v-btn elevation="2" @click="formNew" medium><v-icon>add</v-icon>Добавить</v-btn>
 			<v-list v-if="employees.length" max-width="300" dense light>
-				<v-list-item v-for="(emp, key) in employees" :key="key" @click="editForm(key)">
+				<v-list-item v-for="(emp, key) in employees" :key="key" @click="formEdit(key)">
 					<v-list-item-content>{{ emp.fioShort }}</v-list-item-content>
 				</v-list-item>
 			</v-list>
@@ -19,7 +19,7 @@
 				<p class="mb-0">Сотрудник</p>
 				<v-text-field
 					v-model="current.fio"
-					:rules="fioRules"
+					:rules="rulesFullName"
 					label="Фамилия Имя Отчество"
 					required
 					ref="employeeName"
@@ -33,7 +33,7 @@
 						maxlength="4"
 						:counter="4"
 						v-model="current.pass_ser"
-						:rules= "serRules"
+						:rules= "rulesPSeries"
 						label="серия"
 						required
 					></v-text-field>
@@ -43,7 +43,7 @@
 						maxlength="6"
 						:counter="6"
 						v-model="current.pass_no"
-						:rules="noRules"
+						:rules="rulesPNumber"
 						label="номер"
 						required
 					></v-text-field>
@@ -59,7 +59,7 @@
 							<v-text-field
 								class="d-inline-flex"
 								v-model="displayDate"
-								:rules="dtRules"
+								:rules="rulesPDate"
 								label="дата выдачи"
 								required
 								readonly
@@ -89,7 +89,7 @@
 				<v-dialog
 					v-model="dialogDelete"
 					persistent
-					max-width="290"
+					max-width="450"
 				>
 					<template v-slot:activator="{ on, attrs }">
 						<v-btn elevation="2"
@@ -110,7 +110,7 @@
 								<v-spacer></v-spacer>
 								<v-btn
 									color="green"
-									@click="deleteEmployee(current.index);"
+									@click="deleteEmployee(current.index)"
 								>
 								Да
 								</v-btn>
@@ -131,6 +131,11 @@
 
 
 <script>
+import _ from "lodash/core"
+import moment from "moment"
+
+moment.locale('ru')
+
 export default {
 	name: "EmpStore",
 
@@ -142,52 +147,55 @@ export default {
 		dtMenu: false,
 		dialogDelete: false,
 
-		fioRules: [
+		rulesFullName: [
 			v => !!v || "Необходимо заполнить Фамилию Имя и Отчество",
 			v => /^[^\s]{2,}\s+[^\s]{2,}\s+[^\s]{2,}\s*$/u.test(v) || "Неверный формат",
 		],
-		serRules: [
+		rulesPSeries: [
 			v => !!v || "Необходимо заполнить серию",
 			v => (v && v.length == 4) || "Неверная длина",
 		],
-		noRules: [
+		rulesPNumber: [
 			v => !!v || "Необходимо заполнить номер",
 			v => (v && v.length == 6) || "Неверная длина",
 		],
-		dtRules: [
+		rulesPDate: [
 			v => !!v || "Необходимо заполнить дату выдачи",
 		]
 	}),
 
 	computed: {
 		displayDate() {
-			if (!!!this.current.pass_dt)
+			if (_.isUndefined(this.current.pass_dt))
 				return null
-			return (new Date(this.current.pass_dt).toLocaleDateString())
+			return moment(this.current.pass_dt).format("L")
 		},
 	},
 
 	watch: {
-		dtMenu(val) {
-			val && setTimeout(() => (this.$refs.passportDate.activePicker = "YEAR"))
+		dtMenu: async function(val) {
+			if (!val) return
+			await this.$nextTick()
+			this.$refs.passportDate.activePicker = "YEAR"
 		},
 	},
 
 	mounted: async function() {
-		if (localStorage.getItem("employees")) {
-			try {
-				this.employees = JSON.parse(localStorage.getItem("employees")).map(
-					(item, index) => this.prepareEmployee(item, index)
-				)
-			}
-			catch(e) {
-				localStorage.removeItem("employees")
-			}
+		let employees = localStorage.getItem("employees")
+		if (!employees)
+			return
+		try {
+			this.employees = JSON.parse(employees).map(
+				(item, index) => this.prepareEmployee(item, index)
+			)
+		}
+		catch(e) {
+			localStorage.removeItem("employees")
 		}
 	},
 
 	methods: {
-		storeEmployees: function() {
+		storeEmployees() {
 			const storageKeys = [ "fio", "pass_ser", "pass_no", "pass_dt" ]
 			
 			let prepared = this.employees.map(entry =>
@@ -218,7 +226,7 @@ export default {
 			}
 		},
 
-		saveEmployee: function(entry) {
+		saveEmployee(entry) {
 			if (!this.$refs.employeeForm.validate())
 				return
 
@@ -233,21 +241,21 @@ export default {
 			this.$refs.employeeForm.reset()
 		},
 
-		deleteEmployee: function(key) {
-			this.dialogDelete = false;
+		deleteEmployee(key) {
+			this.dialogDelete = false
 			this.employees.splice(key, 1)
 			this.current = {}
 			this.storeEmployees()
 			this.$refs.employeeForm.reset()
 		},
 
-		newForm: function() {
+		formNew() {
 			this.current = {}
 			this.$refs.employeeForm.reset()
 			this.$refs.employeeName.focus()
 		},
 
-		editForm: function(key) {
+		formEdit(key) {
 			this.current = {...this.employees[key]}
 			this.$refs.employeeName.focus()
 		},
