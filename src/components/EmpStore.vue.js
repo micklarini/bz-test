@@ -1,13 +1,12 @@
 "use strict"
 
 import _ from "lodash/core"
-import EmployeeStorage from "../logic/EmployeeStorage.js"
+import EmpStore from "../logic/EmpStore.js"
 
 import EmpStoreForm from "./EmpStoreForm"
 
 export default {
 	name: "EmpStore",
-
 	components: { EmpStoreForm },
 
 	data: () => ({
@@ -18,18 +17,18 @@ export default {
 	}),
 
 	mounted: async function() {
-		this.employees = EmployeeStorage.load()
+		this.employees = EmpStore.load()
 		this.$on("entry:save", this.saveEmployee)
 		this.$on("entry:delete", this.deleteEmployee)
 		if (_.isUndefined(this.id)) {
 			this.formNew()
-		}
-		else {
+		} else {
 			this.formEdit(this.id)
 		}
 	},
 
 	computed: {
+
 		id() {
 			return this.$route.params.id
 		},
@@ -41,23 +40,24 @@ export default {
 	},
 
 	methods: {
-		saveEmployee(entry) {
-			entry = EmployeeStorage.prepareItem(entry)
-			this.employees[entry.id] = entry
-			EmployeeStorage.save(this.employees)
-			this.snackbar.text = `${entry.fio} — сохранен`
+
+		saveEmployee(emp) {
+			emp = EmpStore.prepare(emp)
+			this.employees[emp.id] = emp
+			EmpStore.save(this.employees)
+			this.snackbar.text = `${ emp.fio } — сохранен`
 			this.snackbarOn = true
 			this.current = {}
 			this.$recompute("emplMap")
 			this.$router.push("/")
 		},
 
-		deleteEmployee(entry) {
-			if (_.isUndefined(entry.id))
-				return
-			delete this.employees[entry.id]
-			EmployeeStorage.save(this.employees)
-			this.snackbar.text = `${entry.fio} — удален!`
+		deleteEmployee(emp) {
+			if (_.isUndefined(emp.id)) return //^
+			delete this.employees[emp.id]
+			EmpStore.save(this.employees)
+
+			this.snackbar.text = `${ emp.fio } — удален!`
 			this.snackbarOn = true
 			this.current = {}
 			this.$recompute("emplMap")
@@ -71,7 +71,7 @@ export default {
 		},
 
 		formEdit: async function(id) {
-			this.current = {...this.employees[id]}
+			this.current = { ...this.employees[id] }
 			await this.$nextTick()
 			this.$refs.editorForm.entryEdit()
 		},

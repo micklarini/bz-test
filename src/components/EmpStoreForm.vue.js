@@ -7,28 +7,28 @@ export default {
 	name: "EmpStoreForm",
 
 	props: {
-		entry: { type: Object, required: true }
+		values: { type: Object, required: true },
 	},
 
 	data: () => ({
 		valid: true,
 		dtMenu: false,
 		dialogDelete: false,
-		saveDisabled: true,
+		saveOff: true,
 
 		rulesFullName: [
 			v => !!v || "Необходимо заполнить Фамилию Имя и Отчество",
 			v => /^[^\s]{2,}\s+[^\s]{2,}\s+[^\s]{2,}\s*$/u.test(v) || "Неверный формат",
 		],
-		rulesPSeries: [
+		rulesPassSer: [
 			v => !!v || "Необходимо заполнить серию",
 			v => (v && v.length == 4) || "Неверная длина",
 		],
-		rulesPNumber: [
+		rulesPassNo: [
 			v => !!v || "Необходимо заполнить номер",
 			v => (v && v.length == 6) || "Неверная длина",
 		],
-		rulesPDate: [
+		rulesPassDt: [
 			v => !!v || "Необходимо заполнить дату выдачи",
 		],
 	}),
@@ -36,43 +36,46 @@ export default {
 	computed: {
 		displayDate: {
 			get() {
-				if (_.isUndefined(this.entry.pass_dt))
-					return null
-				return moment(this.entry.pass_dt).format("L")
+				let dt = this.values.pass_dt
+				return _.isUndefined(dt)
+					? null
+					: moment(dt).format("L")
 			},
-			set() {}
+			set(v) {
+				console.log("displayDate set:", v) //D
+			},
 		},
 	},
 
 	watch: {
-		dtMenu: async function(val) {
-			if (!val) return
+		async dtMenu(v) {
+			if (!v) return //^
 			await this.$nextTick()
-			this.$refs.passportDate.activePicker = "YEAR"
+			this.$refs.passDt.activePicker = "YEAR"
 		},
 	},
 
 	methods: {
 		entryNew() {
-			this.$refs.employeeForm.reset()
+			this.$refs.theForm.reset()
 		},
 
 		entryEdit() {
 		},
 
 		entrySave() {
-			if (!this.$refs.employeeForm.validate())
+			if (!this.$refs.theForm.validate())
 				return
 			this.$parent.$emit("entry:save", { ...this.entry })
-			this.saveDisabled = true
-			this.$refs.employeeForm.reset()
+			this.saveOff = true
+			this.$refs.theForm.reset()
 		},
 
 		entryDelete() {
 			this.$parent.$emit("entry:delete", { ...this.entry })
-			this.saveDisabled = true
+			this.saveOff = true
 			this.dialogDelete = false
-			this.$refs.employeeForm.reset()
+			this.$refs.theForm.reset()
 		},
 	},
 }
