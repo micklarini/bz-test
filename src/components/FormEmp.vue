@@ -1,13 +1,13 @@
 <template>
 	<v-form ref="theForm"
 		v-model="valid"
-		@submit.prevent="entrySave"
+		@submit.prevent="submit"
 		lazy-validation>
 		<p class="mb-0">Сотрудник</p>
 
 		<v-text-field
 			v-model="values.fio"
-			:rules="rulesFullName"
+			:rules="rulesFio"
 			@focus="saveOff = false"
 			label="Фамилия Имя Отчество"
 			required
@@ -101,10 +101,10 @@
 				</v-card-title>
 
 				<v-card-actions>
-					<v-spacer></v-spacer>
+					<v-spacer/>
 					<v-btn
 						color="green"
-						@click="entryDelete()">
+						@click="deleteCurrent">
 						Да
 					</v-btn>
 					<v-btn
@@ -119,10 +119,28 @@
 </template>
 
 <script>
+"use strict"
+
 import moment from "moment"
 import _ from "lodash/core"
 
-moment.locale("ru")
+const RULES = {
+	rulesFio: [
+		v => !!v || "Необходимо заполнить Фамилию Имя и Отчество",
+		v => /^[^\s]{2,}\s+[^\s]{2,}\s+[^\s]{2,}\s*$/u.test(v) || "Неверный формат",
+	],
+	rulesPassSer: [
+		v => !!v || "Необходимо заполнить серию",
+		v => (v && v.length == 4) || "Неверная длина",
+	],
+	rulesPassNo: [
+		v => !!v || "Необходимо заполнить номер",
+		v => (v && v.length == 6) || "Неверная длина",
+	],
+	rulesPassDt: [
+		v => !!v || "Необходимо заполнить дату выдачи",
+	],
+}
 
 export default {
 	name: "FormEmp",
@@ -136,22 +154,7 @@ export default {
 		dtMenu: false,
 		dialogDelete: false,
 		saveOff: true,
-
-		rulesFullName: [
-			v => !!v || "Необходимо заполнить Фамилию Имя и Отчество",
-			v => /^[^\s]{2,}\s+[^\s]{2,}\s+[^\s]{2,}\s*$/u.test(v) || "Неверный формат",
-		],
-		rulesPassSer: [
-			v => !!v || "Необходимо заполнить серию",
-			v => (v && v.length == 4) || "Неверная длина",
-		],
-		rulesPassNo: [
-			v => !!v || "Необходимо заполнить номер",
-			v => (v && v.length == 6) || "Неверная длина",
-		],
-		rulesPassDt: [
-			v => !!v || "Необходимо заполнить дату выдачи",
-		],
+		...RULES,
 	}),
 
 	computed: {
@@ -169,6 +172,11 @@ export default {
 	},
 
 	watch: {
+
+		["values.id"](v) {
+			if (!v) this.$refs.theForm.reset()
+		},
+
 		async dtMenu(v) {
 			if (!v) return //^
 			await this.$nextTick()
@@ -177,26 +185,19 @@ export default {
 	},
 
 	methods: {
-		entryNew() {
-			this.$refs.theForm.reset()
-		},
 
-		entryEdit() {
-		},
+		submit() {
+			const form = this.$refs.theForm
+			if (!form || !form.validate()) return //^
 
-		entrySave() {
-			if (!this.$refs.theForm.validate())
-				return
-			this.$parent.$emit("entry:save", { ...this.entry })
+			this.$emit("save", this.values)
 			this.saveOff = true
-			this.$refs.theForm.reset()
 		},
 
-		entryDelete() {
-			this.$parent.$emit("entry:delete", { ...this.entry })
+		deleteCurrent() {
+			this.$emit("delete", this.values)
 			this.saveOff = true
 			this.dialogDelete = false
-			this.$refs.theForm.reset()
 		},
 	},
 }

@@ -1,10 +1,12 @@
 <template>
 	<v-container>
+
 		<v-row>
 			<v-col cols="12" class="text-center">
 				<h1 class="font-weight-bold mb-3 display-1">Сотрудники — данные</h1>
 			</v-col>
 		</v-row>
+
 		<v-row>
 			<v-col cols="3" class="text-left">
 				<v-btn elevation="2" to="/" @click="formNew()" medium><v-icon>add</v-icon>Добавить
@@ -19,29 +21,32 @@
 					</v-list-item>
 				</v-list>
 			</v-col>
+
 			<v-col cols="9">
 				<FormEmp
 					ref="editorForm"
 					:values="current"
+					@save="saveEmployee"
+					@delete="deleteEmployee"
 				/>
 			</v-col>
 		</v-row>
+
 		<v-snackbar
 			v-model="snackbarOn"
-			:timeout="snackbar.timeout"
-		>
+			:timeout="snackbar.timeout">
 			{{ snackbar.text }}
 			<template v-slot:action="{ attrs }">
 				<v-btn
 					color="red"
 					text
 					v-bind="attrs"
-					@click="snackbarOn = false"
-				>
+					@click="snackbarOn = false">
 					Закрыть
 				</v-btn>
 			</template>
 		</v-snackbar>
+
 	</v-container>
 </template>
 
@@ -65,8 +70,6 @@ export default {
 
 	mounted: async function() {
 		this.employees = api.load()
-		this.$on("entry:save", this.saveEmployee)
-		this.$on("entry:delete", this.deleteEmployee)
 		if (_.isUndefined(this.id)) {
 			this.formNew()
 		} else {
@@ -90,37 +93,36 @@ export default {
 
 		saveEmployee(emp) {
 			emp = api.prepare(emp)
-			this.employees[emp.id] = emp
+			this.$set(this.employees, emp.id, emp)
 			api.save(this.employees)
+
 			this.snackbar.text = `${ emp.fio } — сохранен`
 			this.snackbarOn = true
-			this.current = {}
-			this.$recompute("emplMap")
-			this.$router.push("/")
+			// this.current = {}
+			// this.$recompute("emplMap")
+			// this.$router.push({ name: "PageHome" })
 		},
 
 		deleteEmployee(emp) {
 			if (_.isUndefined(emp.id)) return //^
-			delete this.employees[emp.id]
+			this.$delete(this.employees, emp.id)
 			api.save(this.employees)
 
 			this.snackbar.text = `${ emp.fio } — удален!`
 			this.snackbarOn = true
 			this.current = {}
-			this.$recompute("emplMap")
-			this.$router.push("/")
+			// this.$recompute("emplMap")
+			this.$router.push({ name: "PageHome" })
 		},
 
 		formNew: async function() {
 			this.current = {}
 			await this.$nextTick()
-			this.$refs.editorForm.entryNew()
 		},
 
 		formEdit: async function(id) {
 			this.current = { ...this.employees[id] }
 			await this.$nextTick()
-			this.$refs.editorForm.entryEdit()
 		},
 	},
 }
