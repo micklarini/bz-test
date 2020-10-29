@@ -4,6 +4,7 @@
 		<v-text-field
 			v-model="entry.fio"
 			:rules="rulesFullName"
+			@focus="saveDisabled=false"
 			label="Фамилия Имя Отчество"
 			required
 			ref="employeeName"
@@ -18,6 +19,7 @@
 				:counter="4"
 				v-model="entry.pass_ser"
 				:rules= "rulesPSeries"
+				@focus="saveDisabled=false"
 				label="серия"
 				required
 			></v-text-field>
@@ -28,6 +30,7 @@
 				:counter="6"
 				v-model="entry.pass_no"
 				:rules="rulesPNumber"
+				@focus="saveDisabled=false"
 				label="номер"
 				required
 			></v-text-field>
@@ -45,6 +48,7 @@
 						v-model="displayDate"
 						:rules="rulesPDate"
 						label="дата выдачи"
+						@focus="saveDisabled=false"
 						required
 						readonly
 						v-bind="attrs"
@@ -63,6 +67,7 @@
 		</div>
 		<v-btn
 			elevation="2"
+			:disabled="saveDisabled"
 			@click="entrySave()"
 			medium
 			color="primary"
@@ -77,7 +82,7 @@
 		>
 			<template v-slot:activator="{ on, attrs }">
 				<v-btn elevation="2"
-					:disabled="!entry.stored"
+					:disabled="!entry.id"
 					medium
 					color="secondary"
 					v-bind="attrs"

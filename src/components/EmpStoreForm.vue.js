@@ -14,6 +14,7 @@ export default {
 		valid: true,
 		dtMenu: false,
 		dialogDelete: false,
+		saveDisabled: true,
 
 		rulesFullName: [
 			v => !!v || "Необходимо заполнить Фамилию Имя и Отчество",
@@ -54,26 +55,24 @@ export default {
 	methods: {
 		entryNew() {
 			this.$refs.employeeForm.reset()
-			this.$refs.employeeName.focus()
 		},
 
 		entryEdit() {
-			this.$refs.employeeName.focus()
 		},
 
 		entrySave() {
 			if (!this.$refs.employeeForm.validate())
 				return
 			this.$parent.$emit("entry:save", { ...this.entry })
+			this.saveDisabled = true
 			this.$refs.employeeForm.reset()
 		},
 
 		entryDelete() {
 			this.$parent.$emit("entry:delete", { ...this.entry })
+			this.saveDisabled = true
 			this.dialogDelete = false
 			this.$refs.employeeForm.reset()
 		},
-
 	},
-
 }
