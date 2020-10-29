@@ -1,18 +1,15 @@
 "use strict"
 
-import _ from "lodash/core"
+import _ from "lodash"
 
 export function load() {
-	const emps = {}
-	const items = JSON.parse(localStorage.getItem("employees"))
-	if (!items) return emps //^
+	const emps = JSON.parse(localStorage.getItem("employees"))
+	if (!emps) return {} //^
 
 	try {
-		Object.entries(items)
-			.map(v => {
-				emps[v[0]] = this.prepare(v[1], v[0])
-			})
-		return emps
+		return _.forEach(emps, (v, k) => {
+			emps[k] = prepare(v, k)
+		})
 	} catch(err) {
 		localStorage.removeItem("employees")
 		return emps
@@ -22,25 +19,13 @@ export function load() {
 const STORAGE_KEYS = ["fio", "pass_ser", "pass_no", "pass_dt"]
 
 export function save(emps) {
-	const STORAGE_KEYS = ["fio", "pass_ser", "pass_no", "pass_dt"]
-	let prepared = {}
-
-	for (var emp in emps) {
-		prepared[emp] = Object.keys(emps[emp])
-			.filter(k => STORAGE_KEYS.includes(k))
-			.reduce((obj, k) => {
-				obj[k] = emps[emp][k]
-				return obj
-			}, {})
-	}
-	for (var k in prepared) {
-		var item = {
-			...prepared[k],
-			pass_dt: prepared[k].pass_dt + "T00:00:00Z",
+	const prepared = _.reduce(emps, (acc, v, k) => {
+		acc[k] = {
+			..._.pick(v, STORAGE_KEYS),
+			pass_dt: v.pass_dt + "T00:00:00Z",
 		}
-		delete item.id
-		prepared[k] = item
-	}
+		return acc
+	}, {})
 	localStorage.setItem("employees", JSON.stringify(prepared))
 }
 
