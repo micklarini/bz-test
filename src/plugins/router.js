@@ -1,12 +1,12 @@
 import Vue from "vue"
 import VueRouter from "vue-router"
-import EmpStore from "../components/EmpStore"
+import PageEmp from "../components/PageEmp"
 
 Vue.use(VueRouter)
 
 const routes = [
-		{ path: "", component: EmpStore },
-		{ path: "/:id", component: EmpStore },
+	{ path: "", component: PageEmp },
+	{ path: "/:id", component: PageEmp },
 ]
 
 export default new VueRouter({
