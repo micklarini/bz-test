@@ -173,8 +173,9 @@ export default {
 
 	watch: {
 
-		["values.id"](v) {
-			if (!v) this.$refs.theForm.reset()
+		["values.id"](v, prev) {
+			if (!v) return this.$refs.theForm.reset()
+			if(v !== prev) this.saveOff = true
 		},
 
 		async dtMenu(v) {

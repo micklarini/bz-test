@@ -14,6 +14,7 @@ const routes = [
 		path: "/:id",
 		name: "PageEmp",
 		component: PageEmp,
+		props: true,
 	},
 ]
 

@@ -61,14 +61,18 @@ export default {
 	name: "PageEmp",
 	components: { FormEmp },
 
+	props: {
+		id: String,
+	},
+
 	data: () => ({
 		employees: {},
 		current: {},
-		snackbar: { timeout: 1000, text: "" },
+		snackbar: { timeout: 3000, text: "" },
 		snackbarOn: false,
 	}),
 
-	mounted: async function() {
+	mounted() {
 		this.employees = api.load()
 		if (_.isUndefined(this.id)) {
 			this.formNew()
@@ -78,10 +82,6 @@ export default {
 	},
 
 	computed: {
-
-		id() {
-			return this.$route.params.id
-		},
 		emplMap() {
 			return Object.entries(this.employees)
 				.sort((a, b) => a[1].fio.localeCompare(b[1].fio))
@@ -92,15 +92,16 @@ export default {
 	methods: {
 
 		saveEmployee(emp) {
+			const jump = !emp.id
 			emp = api.prepare(emp)
-			this.$set(this.employees, emp.id, emp)
+
+			const { id } = emp
+			this.$set(this.employees, id, emp)
 			api.save(this.employees)
 
 			this.snackbar.text = `${ emp.fio } — сохранен`
 			this.snackbarOn = true
-			// this.current = {}
-			// this.$recompute("emplMap")
-			// this.$router.push({ name: "PageHome" })
+			if (jump) this.$router.push({ name: "PageEmp", params: { id } })
 		},
 
 		deleteEmployee(emp) {
@@ -111,7 +112,6 @@ export default {
 			this.snackbar.text = `${ emp.fio } — удален!`
 			this.snackbarOn = true
 			this.current = {}
-			// this.$recompute("emplMap")
 			this.$router.push({ name: "PageHome" })
 		},
 

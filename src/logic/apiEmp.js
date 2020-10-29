@@ -19,6 +19,8 @@ export function load() {
 	}
 }
 
+const STORAGE_KEYS = ["fio", "pass_ser", "pass_no", "pass_dt"]
+
 export function save(emps) {
 	const STORAGE_KEYS = ["fio", "pass_ser", "pass_no", "pass_dt"]
 	let prepared = {}
