@@ -74,7 +74,7 @@
 		<v-btn
 			type="submit"
 			:disabled="saveOff"
-			color="primary"
+			color="success"
 			class="mr-3">
 			<v-icon>save</v-icon>
 			Сохранить
@@ -89,7 +89,7 @@
 					v-bind="attrs"
 					v-on="on"
 					:disabled="!values.id"
-					color="secondary">
+					color="error">
 					<v-icon>delete</v-icon>
 					Удалить
 				</v-btn>

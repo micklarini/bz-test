@@ -9,14 +9,20 @@
 
 		<v-row>
 			<v-col cols="3" class="text-left">
-				<v-btn elevation="2" to="/" @click="formNew()" medium><v-icon>add</v-icon>Добавить
+				<v-btn @click="newEmp" color="primary">
+					<v-icon>add</v-icon>
+					Добавить
 				</v-btn>
-				<v-list v-if="emplMap.length" max-width="300" dense light>
-					<v-list-item v-for="id in emplMap" :key="id" @click="formEdit(id)">
+
+				<v-list v-if="sortedEmps.length"
+					dense color="transparent"
+					max-width="300">
+					<v-list-item
+						v-for="emp in sortedEmps"
+						:key="emp.id"
+						@click="gotoEmp(emp.id)">
 						<v-list-item-content>
-							<router-link :to="'/' + id">
-								{{ employees[id].fioShort }}
-							</router-link>
+							{{ emp.fioShort }}
 						</v-list-item-content>
 					</v-list-item>
 				</v-list>
@@ -33,15 +39,14 @@
 		</v-row>
 
 		<v-snackbar
-			v-model="snackbarOn"
+			v-model="snackbar.on"
 			:timeout="snackbar.timeout">
 			{{ snackbar.text }}
 			<template #action="{ attrs }">
 				<v-btn
-					color="red"
 					text
 					v-bind="attrs"
-					@click="snackbarOn = false">
+					@click="snackbar.on = false">
 					Закрыть
 				</v-btn>
 			</template>
@@ -68,31 +73,30 @@ export default {
 	data: () => ({
 		employees: {},
 		current: {},
-		snackbar: { timeout: 3000, text: "" },
-		snackbarOn: false,
+		snackbar: { on: false, timeout: 3000, text: "" },
 	}),
 
-	mounted() {
+	created() {
 		this.employees = api.load()
-		if (_.isUndefined(this.id)) {
-			this.formNew()
-		} else {
-			this.formEdit(this.id)
-		}
+		this.resetForm()
 	},
 
 	computed: {
-		emplMap() {
-			return Object.entries(this.employees)
-				.sort((a, b) => a[1].fio.localeCompare(b[1].fio))
-				.map(item => item[0])
+		sortedEmps() {
+			return _.sortBy(this.employees, v => v.fio)
+		},
+	},
+
+	watch: {
+		id() {
+			this.resetForm()
 		},
 	},
 
 	methods: {
 
 		saveEmployee(emp) {
-			const jump = !emp.id
+			const mustGoto = !emp.id
 			emp = api.prepare(emp)
 
 			const { id } = emp
@@ -100,29 +104,41 @@ export default {
 			api.save(this.employees)
 
 			this.snackbar.text = `${ emp.fio } — сохранен`
-			this.snackbarOn = true
-			if (jump) this.$router.push({ name: "PageEmp", params: { id } })
+			this.snackbar.on = true
+			if (mustGoto) this.gotoEmp(id)
 		},
 
 		deleteEmployee(emp) {
 			if (_.isUndefined(emp.id)) return //^
+
 			this.$delete(this.employees, emp.id)
 			api.save(this.employees)
 
 			this.snackbar.text = `${ emp.fio } — удален!`
-			this.snackbarOn = true
-			this.current = {}
+			this.snackbar.on = true
 			this.$router.push({ name: "PageHome" })
 		},
 
-		formNew: async function() {
-			this.current = {}
-			await this.$nextTick()
+		resetForm() {
+			const { id } = this
+			if (_.isUndefined(id)) {
+				this.newEmp()
+			} else {
+				this.editEmp(id)
+			}
 		},
 
-		formEdit: async function(id) {
+		newEmp() {
+			this.current = {}
+		},
+
+		editEmp(id) {
 			this.current = { ...this.employees[id] }
-			await this.$nextTick()
+		},
+
+		gotoEmp(id) {
+			const mustGoto = id !== this.id
+			if (mustGoto) this.$router.push({ name: "PageEmp", params: { id } })
 		},
 	},
 }
