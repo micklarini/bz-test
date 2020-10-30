@@ -47,10 +47,10 @@
 				transition="scale-transition"
 				offset-y
 				min-width="290px">
-				<template v-slot:activator="{ on, attrs }">
+				<template #activator="{ on, attrs }">
 					<v-text-field
 						class="d-inline-flex"
-						v-model="displayDate"
+						:value="displayDate"
 						:rules="rulesPassDt"
 						label="дата выдачи"
 						@focus="saveOff = false"
@@ -84,7 +84,7 @@
 			v-model="dialogDelete"
 			persistent
 			max-width="450">
-			<template v-slot:activator="{ on, attrs }">
+			<template #activator="{ on, attrs }">
 				<v-btn
 					v-bind="attrs"
 					v-on="on"
@@ -158,16 +158,11 @@ export default {
 	}),
 
 	computed: {
-		displayDate: {
-			get() {
-				let dt = this.values.pass_dt
-				return _.isUndefined(dt)
-					? null
-					: moment(dt).format("L")
-			},
-			set(v) {
-				console.log("displayDate set:", v) //D
-			},
+		displayDate() {
+			let dt = this.values.pass_dt
+			return _.isUndefined(dt)
+				? null
+				: moment(dt).format("L")
 		},
 	},
 
@@ -175,7 +170,7 @@ export default {
 
 		["values.id"](v, prev) {
 			if (!v) return this.$refs.theForm.reset()
-			if(v !== prev) this.saveOff = true
+			if (v !== prev) this.saveOff = true
 		},
 
 		async dtMenu(v) {

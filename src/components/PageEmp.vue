@@ -36,7 +36,7 @@
 			v-model="snackbarOn"
 			:timeout="snackbar.timeout">
 			{{ snackbar.text }}
-			<template v-slot:action="{ attrs }">
+			<template #action="{ attrs }">
 				<v-btn
 					color="red"
 					text
